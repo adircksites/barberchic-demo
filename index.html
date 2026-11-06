@@ -5,25 +5,26 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Barberchic Fonseca — Barbearia</title>
-  <meta name="description" content="Barberchic Fonseca: corte, barba e estilo. Agende seu horário online.">
+  <meta name="description" content="Barbearia Barberchic Fonseca: cabelo, barba e sobrancelha. Experiência, estilo e cuidado em cada detalhe. Agende online.">
   <link rel="icon" href="./img/logo.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./css/site.css">
 </head>
 <body>
   <div id="demo-banner" class="demo-banner" hidden>Modo demonstração: nenhuma mensagem é enviada de verdade e o código aparece na tela.</div>
 
   <header class="topbar">
-    <a href="#inicio" class="brand"><img id="brand-logo" src="./img/logo.svg" alt=""><span id="brand-name">Barberchic Fonseca</span></a>
+    <a href="#inicio" class="brand" aria-label="Início"><img id="brand-logo" src="./img/logo-claro.svg" alt="Barberchic Fonseca"></a>
     <nav class="nav" id="nav">
+      <a href="#sobre">A barbearia</a>
       <a href="#servicos">Serviços</a>
       <a href="#equipe">Equipe</a>
-      <a href="#galeria" id="nav-galeria">Galeria</a>
+      <a href="#galeria" id="nav-galeria">Fotos</a>
       <a href="#contato">Contato</a>
       <button class="btn btn-ghost btn-sm" id="btn-conta" type="button">Entrar</button>
-      <a href="#agendar" class="btn btn-gold btn-sm" data-agendar>Agendar</a>
+      <a href="agendar.html" class="btn btn-gold btn-sm" data-agendar>Agendar</a>
     </nav>
     <button class="menu-toggle" id="menu-toggle" aria-label="Abrir menu" aria-expanded="false"><span></span><span></span><span></span></button>
   </header>
@@ -32,11 +33,12 @@
     <section class="hero" id="inicio">
       <div class="hero-bg" id="hero-bg"></div>
       <div class="hero-content">
-        <img class="hero-logo" id="hero-logo" src="./img/logo.svg" alt="Logo Barberchic Fonseca">
-        <h1 id="hero-title">Barberchic Fonseca</h1>
-        <p class="hero-tagline" id="hero-tagline">Corte, barba e estilo.</p>
+        <h1 class="sr-only" id="hero-title">Barberchic Fonseca</h1>
+        <img class="hero-logo" id="hero-logo" src="./img/logo-claro.svg" alt="Barberchic Fonseca">
+        <p class="hero-kicker">Cabelo · Barba · Sobrancelha</p>
+        <p class="hero-tagline" id="hero-tagline">Experiência, estilo e cuidado em cada detalhe.</p>
         <div class="hero-actions">
-          <a href="#agendar" class="btn btn-gold btn-lg" data-agendar>Agendar horário</a>
+          <a href="agendar.html" class="btn btn-gold btn-lg" data-agendar>Agendar horário</a>
         </div>
         <div class="hero-secondary">
           <button class="link-btn" type="button" id="btn-cadastrar">Quero me cadastrar</button>
@@ -47,18 +49,33 @@
     </section>
 
     <section class="section about" id="sobre">
-      <div class="container narrow">
-        <p class="eyebrow">A barbearia</p>
-        <p class="about-text" id="about-text"></p>
-        <p class="about-hours"><strong>Funcionamento:</strong> <span id="about-hours"></span></p>
+      <div class="container about-grid">
+        <div>
+          <p class="eyebrow">A barbearia</p>
+          <h2>Seu horário, do seu jeito</h2>
+          <p class="about-text" id="about-text"></p>
+          <p class="about-hours"><strong>Funcionamento:</strong> <span id="about-hours"></span></p>
+          <a href="agendar.html" class="btn btn-outline" data-agendar>Ver horários livres</a>
+        </div>
+        <figure class="about-photo"><img src="./img/galeria/salao.jpg" alt="Fachada e salão da Barberchic Fonseca" loading="lazy"></figure>
       </div>
     </section>
 
-    <section class="section" id="servicos">
+    <section class="section section-dark" id="servicos">
       <div class="container">
         <p class="eyebrow">Serviços</p>
         <h2>O que fazemos</h2>
         <div class="services-grid" id="services-grid"></div>
+        <p style="margin-top:1.6rem"><a href="agendar.html" class="btn btn-gold" data-agendar>Agendar agora</a></p>
+      </div>
+    </section>
+
+    <section class="section" id="galeria">
+      <div class="container">
+        <p class="eyebrow">Fotos</p>
+        <h2>Nosso trabalho</h2>
+        <div class="gallery" id="gallery"></div>
+        <p class="muted small" style="margin-top:1rem">Mais no Instagram: <a id="ig-link" href="https://www.instagram.com/barberchic.fonseca/" target="_blank" rel="noopener">@barberchic.fonseca</a></p>
       </div>
     </section>
 
@@ -67,49 +84,6 @@
         <p class="eyebrow">Equipe</p>
         <h2>Quem vai te atender</h2>
         <div class="team-grid" id="team-grid"></div>
-      </div>
-    </section>
-
-    <section class="section" id="agendar">
-      <div class="container">
-        <p class="eyebrow">Agendamento</p>
-        <h2>Escolha seu horário</h2>
-        <p class="muted">Veja a disponibilidade de cada profissional. Para confirmar, pedimos só seu nome e data de nascimento.</p>
-
-        <div class="booking" id="booking">
-          <div class="step" data-step="1">
-            <h3><span class="step-n">1</span> Serviço</h3>
-            <div class="chips" id="bk-services"></div>
-          </div>
-          <div class="step" data-step="2">
-            <h3><span class="step-n">2</span> Profissional</h3>
-            <div class="chips" id="bk-barbers"></div>
-          </div>
-          <div class="step" data-step="3">
-            <h3><span class="step-n">3</span> Data</h3>
-            <div class="days" id="bk-days"><p class="muted small">Escolha o serviço primeiro.</p></div>
-          </div>
-          <div class="step" data-step="4">
-            <h3><span class="step-n">4</span> Horário</h3>
-            <div class="slots" id="bk-slots"><p class="muted small">Escolha a data.</p></div>
-          </div>
-          <div class="booking-summary" id="bk-summary" hidden>
-            <div>
-              <p class="summary-line" id="bk-summary-text"></p>
-              <p class="muted small" id="bk-summary-who"></p>
-            </div>
-            <button class="btn btn-gold" id="bk-confirm" type="button">Confirmar agendamento</button>
-          </div>
-          <div class="booking-done" id="bk-done" hidden></div>
-        </div>
-      </div>
-    </section>
-
-    <section class="section section-dark" id="galeria" hidden>
-      <div class="container">
-        <p class="eyebrow">Galeria</p>
-        <h2>Nosso trabalho</h2>
-        <div class="gallery" id="gallery"></div>
       </div>
     </section>
 
@@ -125,6 +99,7 @@
             <a id="ct-instagram" href="#" target="_blank" rel="noopener" hidden>Instagram</a>
             <a id="ct-whatsapp" href="#" target="_blank" rel="noopener" hidden>WhatsApp</a>
           </p>
+          <a href="agendar.html" class="btn btn-gold" data-agendar>Agendar horário</a>
         </div>
         <div class="map" id="ct-map"></div>
       </div>
@@ -132,26 +107,17 @@
   </main>
 
   <footer class="footer">
+    <img src="./img/logo-claro.svg" alt="" class="footer-logo">
     <p><span id="ft-name">Barberchic Fonseca</span> · <button class="link-btn" id="ft-cadastrar" type="button">Quero me cadastrar</button> · <button class="link-btn" id="ft-atualizar" type="button">Atualizar meu cadastro</button></p>
     <p class="muted small">Seus dados são usados só para agendamentos e, se você autorizar, para mensagens da barbearia. Você pode cancelar a qualquer momento.</p>
   </footer>
 
-  <!-- Janela de identificação / cadastro -->
   <div class="modal" id="auth-modal" hidden role="dialog" aria-modal="true" aria-labelledby="auth-title">
-    <div class="modal-box">
-      <button class="modal-close" type="button" data-close aria-label="Fechar">×</button>
-      <div id="auth-body"></div>
-    </div>
+    <div class="modal-box"><button class="modal-close" type="button" data-close aria-label="Fechar">×</button><div id="auth-body"></div></div>
   </div>
-
-  <!-- Meu cadastro -->
   <div class="modal" id="me-modal" hidden role="dialog" aria-modal="true" aria-labelledby="me-title">
-    <div class="modal-box wide">
-      <button class="modal-close" type="button" data-close aria-label="Fechar">×</button>
-      <div id="me-body"></div>
-    </div>
+    <div class="modal-box wide"><button class="modal-close" type="button" data-close aria-label="Fechar">×</button><div id="me-body"></div></div>
   </div>
-
   <div class="toast" id="toast" hidden></div>
   <script src="./js/demo-api.js"></script>
   <script src="./js/site.js"></script>

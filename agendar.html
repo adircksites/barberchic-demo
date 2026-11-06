@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta name="robots" content="noindex">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Agendar horário — Barberchic Fonseca</title>
+  <meta name="description" content="Veja os horários livres e agende na Barberchic Fonseca.">
+  <link rel="icon" href="./img/logo.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./css/site.css">
+</head>
+<body class="page-agendar">
+  <div id="demo-banner" class="demo-banner" hidden>Modo demonstração: nenhuma mensagem é enviada de verdade e o código aparece na tela.</div>
+
+  <header class="topbar">
+    <a href="./" class="brand" aria-label="Início"><img id="brand-logo" src="./img/logo-claro.svg" alt="Barberchic Fonseca"></a>
+    <nav class="nav" id="nav">
+      <a href="./">Início</a>
+      <a href="#precos">Preços</a>
+      <a href="#agenda-top">Horários</a>
+      <button class="btn btn-ghost btn-sm" id="btn-conta" type="button">Entrar</button>
+    </nav>
+    <button class="menu-toggle" id="menu-toggle" aria-label="Abrir menu" aria-expanded="false"><span></span><span></span><span></span></button>
+  </header>
+
+  <main>
+    <section class="page-head">
+      <div class="container">
+        <p class="eyebrow">Agendamento</p>
+        <h1>Agende seu horário</h1>
+        <p class="muted">Confira os valores, toque em um horário <b>livre</b> e escolha o serviço e o profissional.</p>
+      </div>
+    </section>
+
+    <section class="section-tight" id="precos">
+      <div class="container">
+        <h2 class="h-small">Serviços e valores</h2>
+        <div class="price-list" id="price-list"></div>
+      </div>
+    </section>
+
+    <section class="section-tight" id="agenda-top">
+      <div class="container">
+        <div class="agenda-head">
+          <h2 class="h-small">Horários</h2>
+          <div class="week-nav">
+            <button class="btn btn-outline btn-sm" id="wk-prev" type="button" aria-label="Dias anteriores">‹</button>
+            <span id="wk-label" class="week-label"></span>
+            <button class="btn btn-outline btn-sm" id="wk-next" type="button" aria-label="Próximos dias">›</button>
+          </div>
+        </div>
+        <div class="legend"><span><i class="lg free"></i>Livre</span><span><i class="lg ocupado"></i>Ocupado</span><span><i class="lg fechado"></i>Fechado</span></div>
+        <div class="sched-wrap" id="bk-grid"></div>
+        <div class="booking-done" id="bk-done" hidden></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <img src="./img/logo-claro.svg" alt="" class="footer-logo">
+    <p><span id="ft-name">Barberchic Fonseca</span> · <button class="link-btn" id="ft-cadastrar" type="button">Quero me cadastrar</button> · <button class="link-btn" id="ft-atualizar" type="button">Atualizar meu cadastro</button></p>
+  </footer>
+
+  <!-- Escolha do serviço e do profissional no horário clicado -->
+  <div class="modal" id="slot-modal" hidden role="dialog" aria-modal="true" aria-labelledby="slot-title">
+    <div class="modal-box"><button class="modal-close" type="button" data-close aria-label="Fechar">×</button><div id="slot-body"></div></div>
+  </div>
+  <div class="modal" id="auth-modal" hidden role="dialog" aria-modal="true" aria-labelledby="auth-title">
+    <div class="modal-box"><button class="modal-close" type="button" data-close aria-label="Fechar">×</button><div id="auth-body"></div></div>
+  </div>
+  <div class="modal" id="me-modal" hidden role="dialog" aria-modal="true" aria-labelledby="me-title">
+    <div class="modal-box wide"><button class="modal-close" type="button" data-close aria-label="Fechar">×</button><div id="me-body"></div></div>
+  </div>
+  <div class="toast" id="toast" hidden></div>
+  <script src="./js/demo-api.js"></script>
+  <script src="./js/site.js"></script>
+</body>
+</html>

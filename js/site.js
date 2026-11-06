@@ -21,125 +21,142 @@
   }
   function busy(btn, on) { if (!btn) return; btn.disabled = on; if (on) { btn.dataset.label = btn.textContent; btn.textContent = 'Aguarde…'; } else if (btn.dataset.label) btn.textContent = btn.dataset.label; }
 
-  const state = { site: null, me: null, sel: { servico: null, barbeiro: 'qualquer', data: null, hora: null, horaInfo: null } };
+  const state = { site: null, me: null, week: null, start: null, slot: null };
+  const isBookingPage = () => Boolean($('#bk-grid'));
+  const BOOK_URL = 'agendar.html';
+  const setText = (sel, v) => { const el = $(sel); if (el) el.textContent = v || ''; };
 
-  // ---------- Conteúdo da página ----------
+  // ---------- Conteúdo comum ----------
   function renderSite(s) {
     const b = s.barbearia;
-    document.title = `${b.nome} — Barbearia`;
-    $('#brand-name').textContent = b.nome; $('#hero-title').textContent = b.nome; $('#ft-name').textContent = b.nome;
-    if (b.logo) { $('#brand-logo').src = b.logo; $('#hero-logo').src = b.logo; }
-    if (b.capa) { const bg = $('#hero-bg'); bg.style.backgroundImage = `url("${b.capa}")`; bg.classList.add('has-photo'); }
-    $('#hero-tagline').textContent = b.slogan || '';
-    $('#about-text').textContent = b.sobre || '';
-    $('#about-hours').textContent = b.horarios || '';
-    $('#ct-address').textContent = b.endereco || '';
-    $('#ct-hours').textContent = b.horarios || '';
-    $('#ct-phone').textContent = b.telefone || '';
-    if (b.instagram) { $('#ct-instagram').href = b.instagram; $('#ct-instagram').hidden = false; }
-    if (b.whatsapp) { $('#ct-whatsapp').href = `https://wa.me/${String(b.whatsapp).replace(/\D/g, '')}`; $('#ct-whatsapp').hidden = false; }
-    if (b.mapa && /^https:\/\/www\.google\.com\/maps\/embed/.test(b.mapa)) $('#ct-map').innerHTML = `<iframe src="${esc(b.mapa)}" loading="lazy" referrerpolicy="no-referrer-when-downgrade" title="Mapa"></iframe>`;
-    $('#demo-banner').hidden = !s.demo;
+    document.title = isBookingPage() ? `Agendar horário — ${b.nome}` : `${b.nome} — Barbearia`;
+    setText('#brand-name', b.nome); setText('#hero-title', b.nome); setText('#ft-name', b.nome);
+    if (b.logo) $$('#brand-logo, #hero-logo, .footer-logo').forEach((i) => { i.src = b.logo; });
+    if (b.instagram && $('#ig-link')) $('#ig-link').href = b.instagram;
+    const bg = $('#hero-bg');
+    if (bg && b.capa) { bg.style.backgroundImage = `url("${b.capa}")`; bg.classList.add('has-photo'); }
+    setText('#hero-tagline', b.slogan); setText('#about-text', b.sobre); setText('#about-hours', b.horarios);
+    setText('#ct-address', b.endereco); setText('#ct-hours', b.horarios); setText('#ct-phone', b.telefone);
+    if (b.instagram && $('#ct-instagram')) { $('#ct-instagram').href = b.instagram; $('#ct-instagram').hidden = false; }
+    if (b.whatsapp && $('#ct-whatsapp')) { $('#ct-whatsapp').href = `https://wa.me/${String(b.whatsapp).replace(/\D/g, '')}`; $('#ct-whatsapp').hidden = false; }
+    if ($('#ct-map') && b.mapa && /^https:\/\/www\.google\.com\/maps\/embed/.test(b.mapa)) $('#ct-map').innerHTML = `<iframe src="${esc(b.mapa)}" loading="lazy" referrerpolicy="no-referrer-when-downgrade" title="Mapa"></iframe>`;
+    if ($('#demo-banner')) $('#demo-banner').hidden = !s.demo;
 
-    $('#services-grid').innerHTML = s.servicos.map((v) => `<article class="service"><div class="service-name">${esc(v.nome)}</div>
+    const servicesHtml = s.servicos.map((v) => `<article class="service"><div class="service-name">${esc(v.nome)}</div>
       ${v.descricao ? `<p class="muted small">${esc(v.descricao)}</p>` : ''}<div class="service-meta"><span class="muted small">${v.duracao} min</span><span class="service-price">${brl(v.preco)}</span></div></article>`).join('')
       || '<p class="muted">Serviços em breve.</p>';
+    if ($('#services-grid')) $('#services-grid').innerHTML = servicesHtml;
+    if ($('#price-list')) $('#price-list').innerHTML = s.servicos.map((v) => `<div class="price-row"><span class="price-name">${esc(v.nome)}<small>${v.duracao} min</small></span><span class="price-dots" aria-hidden="true"></span><span class="price-val">${brl(v.preco)}</span></div>`).join('') || '<p class="muted">Serviços em breve.</p>';
 
-    $('#team-grid').innerHTML = s.barbeiros.map((m) => `<div class="member">${m.foto ? `<img class="member-photo" src="${esc(m.foto)}" alt="${esc(m.nome)}">` : `<div class="member-photo" aria-hidden="true">${esc(m.nome[0] || '?')}</div>`}
+    if ($('#team-grid')) $('#team-grid').innerHTML = s.barbeiros.map((m) => `<div class="member">${m.foto ? `<img class="member-photo" src="${esc(m.foto)}" alt="${esc(m.nome)}">` : `<div class="member-photo" aria-hidden="true">${esc(m.nome[0] || '?')}</div>`}
       <p class="member-name">${esc(m.nome)}</p>${m.bio ? `<p class="member-bio">${esc(m.bio)}</p>` : ''}</div>`).join('') || '<p class="muted">Equipe em breve.</p>';
 
-    const hasGallery = s.galeria.length > 0;
-    $('#galeria').hidden = !hasGallery; $('#nav-galeria').hidden = !hasGallery;
-    $('#gallery').innerHTML = s.galeria.map((g) => `<figure><img src="${esc(g.path)}" alt="${esc(g.caption || 'Trabalho da barbearia')}" loading="lazy"></figure>`).join('');
-
-    renderServiceChips();
+    if ($('#galeria')) {
+      const hasGallery = s.galeria.length > 0;
+      $('#galeria').hidden = !hasGallery; if ($('#nav-galeria')) $('#nav-galeria').hidden = !hasGallery;
+      $('#gallery').innerHTML = s.galeria.map((g) => `<figure><img src="${esc(g.path)}" alt="${esc(g.caption || 'Trabalho da barbearia')}" loading="lazy"></figure>`).join('');
+    }
+    if (isBookingPage()) loadWeek(null);
   }
 
-  // ---------- Agendamento ----------
-  function renderServiceChips() {
-    const s = state.site;
-    $('#bk-services').innerHTML = s.servicos.map((v) => `<button type="button" class="chip" data-svc="${v.id}" aria-pressed="${state.sel.servico === v.id}">${esc(v.nome)}<small>${v.duracao} min · ${brl(v.preco)}</small></button>`).join('');
-    renderBarberChips();
-  }
-  function renderBarberChips() {
-    const s = state.site, sid = state.sel.servico;
-    const list = s.barbeiros.filter((b) => !sid || b.servicos.includes(sid));
-    if (state.sel.barbeiro !== 'qualquer' && !list.some((b) => b.id === state.sel.barbeiro)) state.sel.barbeiro = 'qualquer';
-    $('#bk-barbers').innerHTML = `<button type="button" class="chip" data-barber="qualquer" aria-pressed="${state.sel.barbeiro === 'qualquer'}">Qualquer disponível</button>` +
-      list.map((b) => `<button type="button" class="chip" data-barber="${b.id}" aria-pressed="${state.sel.barbeiro === b.id}">${esc(b.nome)}</button>`).join('');
-  }
-  async function loadDays() {
-    const box = $('#bk-days');
-    state.sel.data = null; state.sel.hora = null; updateSummary();
-    $('#bk-slots').innerHTML = '<p class="muted small">Escolha a data.</p>';
-    if (!state.sel.servico) { box.innerHTML = '<p class="muted small">Escolha o serviço primeiro.</p>'; return; }
-    box.innerHTML = '<p class="muted small">Carregando…</p>';
+  // ---------- Agenda em grade (dias × horários de 30 min) ----------
+  const WDL = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+  const dayLabel = (d) => { const [y, m, dd] = d.split('-').map(Number); const wd = new Date(Date.UTC(y, m - 1, dd)).getUTCDay(); return { wd: WDL[wd], dm: `${String(dd).padStart(2, '0')}/${String(m).padStart(2, '0')}` }; };
+  const daysPerView = () => (window.innerWidth < 560 ? 3 : window.innerWidth < 900 ? 5 : 7);
+
+  async function loadWeek(start) {
+    const box = $('#bk-grid');
+    box.innerHTML = '<p class="muted small" style="padding:1rem">Carregando horários…</p>';
     try {
-      const r = await api(`/api/dias?servico=${state.sel.servico}&barbeiro=${state.sel.barbeiro}`);
-      if (!r.dias.length) { box.innerHTML = '<p class="muted small">Nenhum horário livre nos próximos dias para essa escolha.</p>'; return; }
-      box.innerHTML = r.dias.map((d) => { const [y, m, dd] = d.split('-').map(Number); const wd = new Date(Date.UTC(y, m - 1, dd)).getUTCDay();
-        return `<button type="button" class="day" data-day="${d}" aria-pressed="false"><span>${WD[wd]}</span><b>${dd}</b><span>${MES[m - 1]}</span></button>`; }).join('');
-    } catch (e) { box.innerHTML = `<p class="form-error">${esc(e.message)}</p>`; }
+      const r = await api(`/api/semana?dias=${daysPerView()}${start ? `&inicio=${start}` : ''}`);
+      state.week = r; state.start = r.inicio;
+      renderWeek(r);
+    } catch (e) { box.innerHTML = `<p class="form-error" style="padding:1rem">${esc(e.message)}</p>`; }
   }
-  async function loadSlots() {
-    const box = $('#bk-slots');
-    state.sel.hora = null; updateSummary();
-    box.innerHTML = '<p class="muted small">Carregando…</p>';
+  function renderWeek(r) {
+    const box = $('#bk-grid');
+    $('#wk-prev').disabled = !r.anterior; $('#wk-next').disabled = !r.proxima;
+    if (r.dias.length) { const a = dayLabel(r.dias[0].data), z = dayLabel(r.dias[r.dias.length - 1].data); $('#wk-label').textContent = `${a.dm} a ${z.dm}`; }
+    if (!r.horas.length) { box.innerHTML = '<p class="muted" style="padding:1rem">Nenhum horário disponível neste período.</p>'; return; }
+    const cols = r.dias.length;
+    let html = `<div class="sched" style="--cols:${cols}"><div class="sched-corner"></div>`;
+    for (const d of r.dias) { const l = dayLabel(d.data); html += `<div class="sched-day${d.aberto ? '' : ' closed'}"><span>${l.wd}</span><b>${l.dm}</b></div>`; }
+    for (const h of r.horas) {
+      html += `<div class="sched-time">${h}</div>`;
+      for (const d of r.dias) {
+        const st = d.horarios[h];
+        if (st === 'livre') html += `<button type="button" class="cell free" data-date="${d.data}" data-time="${h}" aria-label="${dayLabel(d.data).wd} ${dayLabel(d.data).dm} às ${h}: livre">Livre</button>`;
+        else html += `<div class="cell ${st}" aria-hidden="true">${st === 'ocupado' ? 'Ocupado' : ''}</div>`;
+      }
+    }
+    box.innerHTML = html + '</div>';
+  }
+
+  // Clique num horário livre: escolhe o serviço e quem vai fazer
+  async function openSlot(date, time) {
+    const l = dayLabel(date);
+    state.slot = { date, time, servico: null, barbeiro: 'qualquer', opts: null };
+    $('#slot-body').innerHTML = `<h2 id="slot-title">${l.wd} ${l.dm} às ${time}</h2><p class="muted small">Carregando…</p>`;
+    openModal($('#slot-modal'));
     try {
-      const r = await api(`/api/disponibilidade?servico=${state.sel.servico}&barbeiro=${state.sel.barbeiro}&data=${state.sel.data}`);
-      state.slots = r.horarios;
-      box.innerHTML = r.horarios.length ? r.horarios.map((h) => `<button type="button" class="slot" data-hora="${h.hora}" aria-pressed="false">${h.hora}</button>`).join('')
-        : '<p class="muted small">Sem horários livres nesta data.</p>';
-    } catch (e) { box.innerHTML = `<p class="form-error">${esc(e.message)}</p>`; }
+      const r = await api(`/api/horario?data=${date}&hora=${time}`);
+      state.slot.opts = r.servicos;
+      if (!r.servicos.length) { $('#slot-body').innerHTML = `<h2>${l.wd} ${l.dm} às ${time}</h2><p>Esse horário acabou de ser ocupado. Escolha outro, por favor.</p><button class="btn btn-gold btn-block" data-close type="button">Voltar à agenda</button>`; loadWeek(state.start); return; }
+      renderSlot();
+    } catch (e) { $('#slot-body').innerHTML = `<p class="form-error">${esc(e.message)}</p>`; }
   }
-  function updateSummary() {
-    const sel = state.sel, box = $('#bk-summary');
-    if (sel.hora) $('#bk-done').hidden = true; // nova escolha esconde a confirmação anterior
-    if (!sel.servico || !sel.data || !sel.hora) { box.hidden = true; return; }
-    const svc = state.site.servicos.find((v) => v.id === sel.servico);
-    const [y, m, d] = sel.data.split('-');
-    const slot = (state.slots || []).find((h) => h.hora === sel.hora);
-    const who = sel.barbeiro === 'qualquer' ? (slot && slot.barbeiros.length === 1 ? slot.barbeiros[0].nome : 'qualquer profissional disponível') : state.site.barbeiros.find((b) => b.id === sel.barbeiro)?.nome;
-    $('#bk-summary-text').textContent = `${svc.nome} · ${d}/${m}/${y} às ${sel.hora}`;
-    $('#bk-summary-who').textContent = `Com ${who} · ${brl(svc.preco)}`;
-    box.hidden = false;
+  function renderSlot() {
+    const s = state.slot, l = dayLabel(s.date);
+    const svc = s.opts.find((o) => o.id === s.servico);
+    $('#slot-body').innerHTML = `<h2 id="slot-title">${l.wd} ${l.dm} às ${s.time}</h2>
+      <h3 class="slot-h">O que você quer fazer?</h3>
+      <div class="opt-list">${s.opts.map((o) => `<button type="button" class="opt" data-opt-svc="${o.id}" aria-pressed="${s.servico === o.id}"><span>${esc(o.nome)}<small>${o.duracao} min</small></span><b>${brl(o.preco)}</b></button>`).join('')}</div>
+      ${svc ? `<h3 class="slot-h">Com quem?</h3><div class="chips">${svc.barbeiros.length > 1 ? `<button type="button" class="chip" data-opt-bar="qualquer" aria-pressed="${s.barbeiro === 'qualquer'}">Qualquer disponível</button>` : ''}
+        ${svc.barbeiros.map((b) => `<button type="button" class="chip" data-opt-bar="${b.id}" aria-pressed="${s.barbeiro === b.id || svc.barbeiros.length === 1}">${esc(b.nome)}</button>`).join('')}</div>` : ''}
+      <button class="btn btn-gold btn-block" type="button" id="slot-confirm" style="margin-top:1.2rem" ${svc ? '' : 'disabled'}>${svc ? `Confirmar ${esc(svc.nome)} às ${s.time}` : 'Escolha o serviço'}</button>`;
   }
-  async function confirmBooking() {
-    if (!state.me) { openAuth({ mode: 'agendar', then: confirmBooking }); return; }
-    const btn = $('#bk-confirm'); busy(btn, true);
+  async function confirmSlot() {
+    const s = state.slot;
+    if (!state.me) { closeModal($('#slot-modal')); openAuth({ mode: 'agendar', then: () => { openModal($('#slot-modal')); renderSlot(); } }); return; }
+    const svc = s.opts.find((o) => o.id === s.servico);
+    const barbeiro = svc.barbeiros.length === 1 ? svc.barbeiros[0].id : s.barbeiro;
+    const btn = $('#slot-confirm'); busy(btn, true);
     try {
-      const r = await api('/api/agendamentos', { servico: state.sel.servico, barbeiro: state.sel.barbeiro, data: state.sel.data, hora: state.sel.hora });
-      $('#bk-summary').hidden = true;
+      const r = await api('/api/agendamentos', { servico: s.servico, barbeiro, data: s.date, hora: s.time });
+      closeModal($('#slot-modal'));
       const done = $('#bk-done');
       done.innerHTML = `<h3>${r.status === 'confirmado' ? 'Horário confirmado!' : 'Pedido recebido!'}</h3>
         <p><b>${esc(r.servico)}</b> com <b>${esc(r.barbeiro)}</b> em <b>${r.data}</b> às <b>${r.hora}</b>.</p>
         <p class="muted small">${r.status === 'confirmado' ? 'Você receberá a confirmação nos contatos cadastrados.' : 'A barbearia vai confirmar e te avisar.'}
         Para cancelar, use <button class="link-btn" type="button" data-open-me>Meu cadastro</button>.</p>`;
-      done.hidden = false;
-      state.sel.hora = null; $$('#bk-slots .slot').forEach((s) => s.setAttribute('aria-pressed', 'false'));
-      loadSlots(); refreshMe();
+      done.hidden = false; done.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      loadWeek(state.start); refreshMe();
     } catch (e) {
       toast(e.message, true);
-      if (e.status === 409) loadSlots();
-      if (e.status === 401) { state.me = null; openAuth({ mode: 'agendar', then: confirmBooking }); }
+      if (e.status === 409) { closeModal($('#slot-modal')); loadWeek(state.start); }
+      if (e.status === 401) { state.me = null; closeModal($('#slot-modal')); openAuth({ mode: 'agendar', then: () => { openModal($('#slot-modal')); renderSlot(); } }); }
     } finally { busy(btn, false); }
   }
 
   document.addEventListener('click', (ev) => {
     const t = ev.target.closest('button, a');
     if (!t) return;
-    if (t.dataset.svc) { state.sel.servico = Number(t.dataset.svc); $$('#bk-services .chip').forEach((c) => c.setAttribute('aria-pressed', c === t)); renderBarberChips(); loadDays(); }
-    else if (t.dataset.barber) { state.sel.barbeiro = t.dataset.barber === 'qualquer' ? 'qualquer' : Number(t.dataset.barber); $$('#bk-barbers .chip').forEach((c) => c.setAttribute('aria-pressed', c === t)); loadDays(); }
-    else if (t.dataset.day) { state.sel.data = t.dataset.day; $$('#bk-days .day').forEach((c) => c.setAttribute('aria-pressed', c === t)); loadSlots(); }
-    else if (t.dataset.hora) { state.sel.hora = t.dataset.hora; $$('#bk-slots .slot').forEach((c) => c.setAttribute('aria-pressed', c === t)); updateSummary(); }
+    if (t.classList.contains('free') && t.dataset.date) openSlot(t.dataset.date, t.dataset.time);
+    else if (t.dataset.optSvc) { state.slot.servico = Number(t.dataset.optSvc); state.slot.barbeiro = 'qualquer'; renderSlot(); }
+    else if (t.dataset.optBar) { state.slot.barbeiro = t.dataset.optBar === 'qualquer' ? 'qualquer' : Number(t.dataset.optBar); renderSlot(); }
+    else if (t.id === 'slot-confirm') confirmSlot();
+    else if (t.id === 'wk-prev' && state.week?.anterior) loadWeek(state.week.anterior);
+    else if (t.id === 'wk-next' && state.week?.proxima) loadWeek(state.week.proxima);
     else if (t.hasAttribute('data-agendar')) {
-      // Cliente não identificado: abre a janela antes de seguir para a agenda
-      if (!state.me) { ev.preventDefault(); openAuth({ mode: 'agendar', then: () => $('#agendar').scrollIntoView() }); }
+      // Cliente não identificado: abre a janela antes de ir para a agenda
       closeMenu();
+      if (isBookingPage()) { ev.preventDefault(); $('#agenda-top').scrollIntoView({ behavior: 'smooth' }); return; }
+      if (!state.me) { ev.preventDefault(); openAuth({ mode: 'agendar', then: () => { location.href = BOOK_URL; } }); }
     } else if (t.hasAttribute('data-open-me')) openMe();
     else if (t.hasAttribute('data-close')) closeModal(t.closest('.modal'));
   });
-  $('#bk-confirm').addEventListener('click', confirmBooking);
+  let lastW = window.innerWidth;
+  window.addEventListener('resize', () => { if (isBookingPage() && Math.abs(window.innerWidth - lastW) > 120) { lastW = window.innerWidth; loadWeek(state.start); } });
 
   // ---------- Janela de identificação (nome + nascimento → contatos mascarados → código) ----------
   const auth = { ctx: null };
@@ -310,7 +327,7 @@
       <div class="me-row"><div><span class="muted small">Nome</span><br><b>${esc(c.nome)}</b></div><div><span class="muted small">Nascimento</span><br><b>${c.nascimento ? c.nascimento.split('-').reverse().join('/') : '—'}</b></div></div>
       <div class="me-section"><h3>Próximos horários</h3>
         ${upcoming.length ? upcoming.map((a) => `<div class="appt"><div><b>${esc(a.servico)}</b> com ${esc(a.barbeiro)}<br><span class="muted small">${fmt(a.start_at)}${a.status === 'pendente' ? ' · aguardando confirmação' : ''}</span></div>
-          <button class="btn btn-outline btn-sm" type="button" data-cancel="${a.id}">Cancelar</button></div>`).join('') : '<p class="muted small">Nenhum horário marcado. <a href="#agendar" data-close-go>Agendar agora</a></p>'}</div>
+          <button class="btn btn-outline btn-sm" type="button" data-cancel="${a.id}">Cancelar</button></div>`).join('') : `<p class="muted small">Nenhum horário marcado. <a href="${BOOK_URL}" data-close-go>Agendar agora</a></p>`}</div>
       <div class="me-section"><h3>Contatos</h3>
         <div class="me-row"><div><span class="muted small">WhatsApp</span><br><b>${esc(c.telefone ? fmtPhone(c.telefone) : '—')}</b> ${c.telefone ? `<span class="tag ${c.telefone_verificado ? 'ok' : 'warn'}">${c.telefone_verificado ? 'confirmado' : 'não confirmado'}</span>` : ''}</div>
           <button class="btn btn-outline btn-sm" type="button" data-change="whatsapp">${c.telefone ? 'Alterar' : 'Adicionar'}</button></div>
@@ -329,7 +346,7 @@
     $$('#me-body [data-cancel]').forEach((b) => b.addEventListener('click', async () => {
       if (!confirm('Cancelar este horário?')) return;
       busy(b, true);
-      try { await api(`/api/agendamentos/${b.dataset.cancel}/cancelar`, {}); await refreshMe(); openMe(); toast('Horário cancelado.'); if (state.sel.data) loadSlots(); }
+      try { await api(`/api/agendamentos/${b.dataset.cancel}/cancelar`, {}); await refreshMe(); openMe(); toast('Horário cancelado.'); if (isBookingPage()) loadWeek(state.start); }
       catch (e) { toast(e.message, true); busy(b, false); }
     }));
     $$('#me-body [data-change]').forEach((b) => b.addEventListener('click', () => changeContact(b.dataset.change)));
@@ -372,8 +389,8 @@
 
   // ---------- Botões do topo e rodapé ----------
   $('#btn-conta').addEventListener('click', () => { closeMenu(); state.me ? openMe() : openAuth({ mode: 'entrar', then: openMe }); });
-  for (const id of ['#btn-cadastrar', '#ft-cadastrar']) $(id).addEventListener('click', () => { state.me ? openMe() : openAuth({ mode: 'cadastro', then: openMe }); });
-  for (const id of ['#btn-atualizar', '#ft-atualizar']) $(id).addEventListener('click', () => openMe());
+  for (const id of ['#btn-cadastrar', '#ft-cadastrar']) $(id)?.addEventListener('click', () => { state.me ? openMe() : openAuth({ mode: 'cadastro', then: openMe }); });
+  for (const id of ['#btn-atualizar', '#ft-atualizar']) $(id)?.addEventListener('click', () => openMe());
   const menuBtn = $('#menu-toggle');
   function closeMenu() { $('#nav').classList.remove('open'); menuBtn.setAttribute('aria-expanded', 'false'); }
   menuBtn.addEventListener('click', () => { const o = $('#nav').classList.toggle('open'); menuBtn.setAttribute('aria-expanded', String(o)); });

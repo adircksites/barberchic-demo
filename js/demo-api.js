@@ -6,7 +6,7 @@
 // =====================================================================
 (() => {
   const ROOT = (document.currentScript && document.currentScript.src.replace(/js\/demo-api\.js.*$/, '')) || './';
-  const KEY = 'barberchic-demo-v1';
+  const KEY = 'barberchic-demo-v2';
   const TZ = 'America/Sao_Paulo';
   const nowIso = () => new Date().toISOString();
   const localDate = (d = new Date()) => new Date(d).toLocaleDateString('en-CA', { timeZone: TZ });
@@ -76,11 +76,11 @@
       [8, 'info', 'verificacao', 'sem falhas', 'fila: 1 agendada(s)'], [60, 'info', 'envio', 'aceita', '#1 whatsapp'], [61, 'info', 'planejamento', '1 envio(s) agendado(s)', 'Aniversariantes do dia'], [120, 'info', 'executor-iniciado', 'ok', 'executor'],
     ].map(([m, level, action, result, detail], i) => ({ id: 100 - i, ts: t(m), level, action, result, detail, campaign_id: null }));
     return {
-      shop: { name: 'Barberchic Fonseca', tagline: 'Corte, barba e estilo.', about: 'Uma barbearia para quem leva o visual a sério sem perder o bom papo. Atendimento com hora marcada, ambiente confortável e profissionais que conhecem o seu estilo.', address: 'Endereço a confirmar', maps_url: '', phone_display: '', whatsapp_number: '', instagram: 'https://www.instagram.com/barberchic.fonseca/', hours_text: 'Terça a sábado, das 9h às 19h', logo: ROOT + 'img/logo.svg', hero_image: '' },
-      booking: { auto_confirm: true, min_advance_min: 60, max_days_ahead: 30, slot_step_min: 15, cancel_deadline_min: 120, max_future_per_client: 2, client_session_days: 90 },
+      shop: { name: 'Barberchic Fonseca', tagline: 'Experiência, estilo e cuidado em cada detalhe.', about: 'Cabelo, barba e sobrancelha com hora marcada. Um ambiente confortável, com sinuca e boa conversa, e profissionais que conhecem o seu estilo — do degradê na navalha à barba bem desenhada.', address: 'Endereço a confirmar', maps_url: '', phone_display: '', whatsapp_number: '', instagram: 'https://www.instagram.com/barberchic.fonseca/', hours_text: 'Terça a sábado, das 9h às 19h', logo: ROOT + 'img/logo-claro.svg', hero_image: ROOT + 'img/galeria/salao.jpg' },
+      booking: { auto_confirm: true, min_advance_min: 60, max_days_ahead: 30, slot_step_min: 30, cancel_deadline_min: 120, max_future_per_client: 2, client_session_days: 90 },
       alerts: { admin_email: '', stuck_minutes: 30, connection_check_min: 15 },
       replies: { optout_keywords: ['SAIR', 'PARAR', 'STOP', 'DESCADASTRAR'], optout_confirmation: 'Pronto, você não receberá mais mensagens promocionais da {barbearia}.' },
-      clients, services: svc, barbers, appts, campaigns, dispatches, robot, audit: [], blocks: [], gallery: [],
+      clients, services: svc, barbers, appts, campaigns, dispatches, robot, audit: [], blocks: [], gallery: ['degrade-barba', 'degrade-navalhado', 'corte-tesoura', 'barba-tesoura', 'barba-grisalha', 'cacheado', 'salao'].map((n) => ({ path: ROOT + 'img/galeria/' + n + '.jpg', caption: '' })),
       inbound: [{ id: 1, channel: 'whatsapp', from_addr: '+5521999990001', client_id: 1, body: 'Tem horário sábado de manhã?', kind: 'mensagem', status: 'nova', received_at: t(30), reply: null }],
       reviews: [{ id: 1, client_id: 7, kind: 'perdeu-acesso', payload: { telefone: '+5521977770000', email: null, mensagem: 'Troquei de número, corto com o Rafa' }, status: 'aberta', resolution: '', created_at: t(200) }],
       challenges: {}, session: null, admin: null, nextId: 1000,
@@ -160,6 +160,35 @@
       barbeiros: db.barbers.filter((b) => b.active && !b.deleted && b.escala.length).map((b) => ({ id: b.id, nome: bname(b), bio: b.bio, foto: b.photo, servicos: b.servicos })),
       galeria: db.gallery, regras: { dias_a_frente: 30 }, canais: { whatsapp: true, email: true }, demo: false,
     }),
+    'GET /api/semana': (q) => {
+      const step = db.booking.slot_step_min || 30; const today = localDate(); const maxD = addDays(today, db.booking.max_days_ahead);
+      let start = q.inicio && q.inicio > today ? q.inicio : today; if (start > maxD) start = maxD;
+      const n = Math.max(1, Math.min(Number(q.dias) || 7, 14));
+      const toM = (t) => Number(t.slice(0, 2)) * 60 + Number(t.slice(3, 5)); const toH = (m) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
+      const bs = db.barbers.filter((b) => b.active && !b.deleted && b.servicos.length);
+      const days = []; let gMin = Infinity, gMax = -Infinity;
+      for (let i = 0; i < n; i++) {
+        const d = addDays(start, i); if (d > maxD) break;
+        let open = Infinity, close = -Infinity; const free = new Set(); const work = [];
+        for (const b of bs) { const rs = b.escala.filter((e) => e.dia === wdOf(d)); for (const r of rs) { open = Math.min(open, toM(r.inicio)); close = Math.max(close, toM(r.fim)); work.push([toM(r.inicio), toM(r.fim)]); }
+          if (rs.length) for (const sid of b.servicos) { const s = svcById(sid); if (s && s.active) for (const x of freeSlots(b, d, s.duration_min)) free.add(x.hora); } }
+        if (open < Infinity) { gMin = Math.min(gMin, open); gMax = Math.max(gMax, close); }
+        days.push({ d, open, close, free, work });
+      }
+      const horas = []; if (gMin < Infinity) for (let m = gMin; m + step <= gMax; m += step) horas.push(toH(m));
+      const earliest = Date.now() + db.booking.min_advance_min * 60000;
+      const dias = days.map((x) => { const h = {}; for (const t of horas) { const m = toM(t); h[t] = x.open === Infinity || !x.work.some(([a, z]) => m >= a && m + step <= z) ? 'fechado' : at(x.d, t).getTime() < earliest ? 'passado' : x.free.has(t) ? 'livre' : 'ocupado'; } return { data: x.d, aberto: x.open !== Infinity, horarios: h }; });
+      const next = addDays(start, n); const prev = addDays(start, -n);
+      return { inicio: start, passo: step, horas, dias, proxima: next <= maxD ? next : null, anterior: start > today ? (prev < today ? today : prev) : null };
+    },
+    'GET /api/horario': (q) => {
+      const startIso = at(q.data, q.hora).toISOString(); const map = new Map();
+      for (const b of db.barbers.filter((x) => x.active && !x.deleted)) for (const sid of b.servicos) { const s = svcById(sid); if (!s || !s.active) continue;
+        if (!freeSlots(b, q.data, s.duration_min).some((x) => x.start === startIso)) continue;
+        if (!map.has(s.id)) map.set(s.id, { id: s.id, nome: s.name, duracao: s.duration_min, preco: s.price_cents, barbeiros: [] });
+        map.get(s.id).barbeiros.push({ id: b.id, nome: bname(b) }); }
+      return { data: q.data, hora: q.hora, servicos: [...map.values()].sort((a, b) => a.id - b.id) };
+    },
     'GET /api/dias': (q) => {
       const s = svcById(q.servico); const today = localDate(); const out = [];
       for (let i = 0; i <= db.booking.max_days_ahead; i++) { const d = addDays(today, i); if (eligible(q.servico, q.barbeiro).some((b) => freeSlots(b, d, s.duration_min).length)) out.push(d); }
@@ -243,7 +272,7 @@
     return list.sort((a, b) => a.full_name.localeCompare(b.full_name, 'pt-BR'));
   }
   const campStats = (id) => { const o = { whatsapp: {}, email: {} }; for (const x of db.dispatches.filter((d) => d.campaign_id === id)) o[x.channel][x.status] = (o[x.channel][x.status] || 0) + 1; return o; };
-  const fill = (t, c) => String(t).replace(/\{([a-z_]+)\}/g, (m, k) => ({ nome: c.full_name, primeiro_nome: c.full_name.split(' ')[0], barbearia: db.shop.name, barbeiro: 'Rafa', servico: 'Corte', data: fmtBR(nowIso()), hora: '10:00', dia_semana: 'sexta-feira', link_agendamento: ROOT + '#agendar', link_gerenciar: ROOT + 'agendamento.html?t=1', link_descadastro: ROOT + '#' }[k] ?? m));
+  const fill = (t, c) => String(t).replace(/\{([a-z_]+)\}/g, (m, k) => ({ nome: c.full_name, primeiro_nome: c.full_name.split(' ')[0], barbearia: db.shop.name, barbeiro: 'Rafa', servico: 'Corte', data: fmtBR(nowIso()), hora: '10:00', dia_semana: 'sexta-feira', link_agendamento: ROOT + 'agendar.html', link_gerenciar: ROOT + 'agendamento.html?t=1', link_descadastro: ROOT + '#' }[k] ?? m));
   const notInDemo = (what) => { throw new E(400, `${what} não está disponível na demonstração (funciona na versão instalada no servidor).`); };
 
   const adm = {
