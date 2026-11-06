@@ -6,7 +6,7 @@
 // =====================================================================
 (() => {
   const ROOT = (document.currentScript && document.currentScript.src.replace(/js\/demo-api\.js.*$/, '')) || './';
-  const KEY = 'barberchic-demo-v2';
+  const KEY = 'barberchic-demo-v3';
   const TZ = 'America/Sao_Paulo';
   const nowIso = () => new Date().toISOString();
   const localDate = (d = new Date()) => new Date(d).toLocaleDateString('en-CA', { timeZone: TZ });
@@ -80,6 +80,11 @@
       booking: { auto_confirm: true, min_advance_min: 60, max_days_ahead: 30, slot_step_min: 30, cancel_deadline_min: 120, max_future_per_client: 2, client_session_days: 90 },
       alerts: { admin_email: '', stuck_minutes: 30, connection_check_min: 15 },
       replies: { optout_keywords: ['SAIR', 'PARAR', 'STOP', 'DESCADASTRAR'], optout_confirmation: 'Pronto, você não receberá mais mensagens promocionais da {barbearia}.' },
+      products: [
+        { id: 1, name: 'Pomada modeladora (exemplo)', description: 'Fixação média, efeito matte. Produto ilustrativo da demonstração.', price_cents: 4500, photo: null, active: 1, sort: 1 },
+        { id: 2, name: 'Óleo para barba (exemplo)', description: 'Hidrata e perfuma os fios. Produto ilustrativo.', price_cents: 3900, photo: null, active: 1, sort: 2 },
+        { id: 3, name: 'Shampoo para barba (exemplo)', description: 'Limpeza suave do dia a dia. Produto ilustrativo.', price_cents: 3500, photo: null, active: 1, sort: 3 },
+      ],
       clients, services: svc, barbers, appts, campaigns, dispatches, robot, audit: [], blocks: [], gallery: ['degrade-barba', 'degrade-navalhado', 'corte-tesoura', 'barba-tesoura', 'barba-grisalha', 'cacheado', 'salao'].map((n) => ({ path: ROOT + 'img/galeria/' + n + '.jpg', caption: '' })),
       inbound: [{ id: 1, channel: 'whatsapp', from_addr: '+5521999990001', client_id: 1, body: 'Tem horário sábado de manhã?', kind: 'mensagem', status: 'nova', received_at: t(30), reply: null }],
       reviews: [{ id: 1, client_id: 7, kind: 'perdeu-acesso', payload: { telefone: '+5521977770000', email: null, mensagem: 'Troquei de número, corto com o Rafa' }, status: 'aberta', resolution: '', created_at: t(200) }],
@@ -158,6 +163,7 @@
       barbearia: { nome: db.shop.name, slogan: db.shop.tagline, sobre: db.shop.about, endereco: db.shop.address, mapa: db.shop.maps_url, telefone: db.shop.phone_display, whatsapp: db.shop.whatsapp_number, instagram: db.shop.instagram, horarios: db.shop.hours_text, logo: db.shop.logo, capa: db.shop.hero_image },
       servicos: db.services.filter((s) => s.active).map((s) => ({ id: s.id, nome: s.name, descricao: s.description, duracao: s.duration_min, preco: s.price_cents })),
       barbeiros: db.barbers.filter((b) => b.active && !b.deleted && b.escala.length).map((b) => ({ id: b.id, nome: bname(b), bio: b.bio, foto: b.photo, servicos: b.servicos })),
+      produtos: db.products.filter((p) => p.active).sort((a, b) => a.sort - b.sort).map((p) => ({ nome: p.name, descricao: p.description, preco: p.price_cents, foto: p.photo })),
       galeria: db.gallery, regras: { dias_a_frente: 30 }, canais: { whatsapp: true, email: true }, demo: false,
     }),
     'GET /api/semana': (q) => {
@@ -320,6 +326,12 @@
     'POST /admin/api/clientes': (q, b) => { reqAdmin(); if (!String(b.nome || '').trim()) throw new E(400, 'Informe o nome.'); const c = { id: nid(), full_name: b.nome.trim(), birth_date: b.nascimento || null, phone: phoneE164(b.telefone), phone_verified_at: nowIso(), phone2: phoneE164(b.telefone2), email: b.email || null, email_verified_at: nowIso(), address: b.endereco || '', cpf: b.cpf || null, notes: b.observacoes || '', barber_id: Number(b.barbeiro_id) || null, contact_pref: b.preferencia || 'ambos', last_service_at: b.ultimo_atendimento ? at(b.ultimo_atendimento, '12:00').toISOString() : null, source: 'admin', created_at: nowIso(), updated_at: nowIso(), history: [{ created_at: nowIso(), field: 'cadastro', old_value: null, new_value: b.nome, source: 'admin', actor: 'admin:demo' }], consents: {} }; db.clients.push(c); audit('cliente-criado', c.full_name); return { id: c.id }; },
     'POST /admin/api/clientes/:id/atendimento': (q, b, p) => { reqAdmin(); const c = clientById(p.id); c.last_service_at = at(b.data, b.hora).toISOString(); c.history.unshift({ created_at: nowIso(), field: 'ultimo_atendimento', old_value: null, new_value: c.last_service_at, source: 'atendimento', actor: 'admin:demo' }); return { ok: true }; },
     'POST /admin/api/importar': () => notInDemo('A importação de planilha'),
+    'GET /admin/api/produtos': () => { reqAdmin(); return { produtos: db.products }; },
+    'POST /admin/api/produtos': (q, b) => { reqAdmin(); if (!String(b.nome || '').trim()) throw new E(400, 'Informe o nome do produto.'); const raw = String(b.preco || 0); const price = Math.round(Number(raw.includes(',') ? raw.replace(/\./g, '').replace(',', '.') : raw) * 100);
+      const data = { name: b.nome.trim(), description: b.descricao || '', price_cents: price, active: b.ativo === false ? 0 : 1, sort: Number(b.ordem) || 0 };
+      if (b.id) { const p = db.products.find((x) => x.id === Number(b.id)); Object.assign(p, data); if (b.foto) p.photo = b.foto; else if (b.remover_foto) p.photo = null; } else db.products.push({ id: nid(), photo: b.foto || null, ...data });
+      audit('produto-salvo', data.name); return { ok: true }; },
+    'DELETE /admin/api/produtos/:id': (q, b, p) => { reqAdmin(); db.products = db.products.filter((x) => x.id !== Number(p.id)); return { ok: true }; },
     'GET /admin/api/funcionarios': () => { reqAdmin(); return { funcionarios: db.barbers.filter((b) => !b.deleted) }; },
     'POST /admin/api/funcionarios': (q, b) => { reqAdmin(); if (!String(b.nome || '').trim()) throw new E(400, 'Informe o nome do funcionário.'); const f = { id: nid(), name: b.nome.trim(), nickname: b.apelido || '', birth_date: b.nascimento || null, phone: phoneE164(b.telefone), email: b.email || null, address: b.endereco || '', bio: b.bio || '', photo: b.foto || null, active: b.habilitado ? 1 : 0, servicos: b.servicos || [], escala: [] }; db.barbers.push(f); audit('funcionario-criado', f.name); return { id: f.id }; },
     'PUT /admin/api/funcionarios/:id': (q, b, p) => { reqAdmin(); const f = barberById(p.id); Object.assign(f, { name: b.nome, nickname: b.apelido, birth_date: b.nascimento || null, phone: phoneE164(b.telefone), email: b.email || null, address: b.endereco, bio: b.bio, active: b.habilitado ? 1 : 0, servicos: b.servicos }); if (b.foto) f.photo = b.foto; audit('funcionario-editado', f.name); return { ok: true }; },
@@ -419,7 +431,7 @@
   // Faixa de demonstração
   document.addEventListener('DOMContentLoaded', () => {
     const bar = document.createElement('div');
-    bar.setAttribute('style', 'position:fixed;left:0;right:0;bottom:0;z-index:99;background:#3b2f12;color:#f1d796;font:13px system-ui,sans-serif;padding:.45rem 1rem;display:flex;gap:1rem;justify-content:center;align-items:center;flex-wrap:wrap');
+    bar.setAttribute('style', 'position:fixed;left:var(--side,0px);right:0;bottom:0;z-index:99;background:#3b2f12;color:#f1d796;font:13px system-ui,sans-serif;padding:.45rem 1rem;display:flex;gap:1rem;justify-content:center;align-items:center;flex-wrap:wrap');
     const isAdmin = /\/admin\//.test(location.pathname);
     bar.innerHTML = `<span><b>Demonstração</b> com dados fictícios — nada é enviado de verdade.</span>${isAdmin ? '<span>Login: qualquer usuário e senha; código: quaisquer 6 dígitos.</span>' : '<span>Teste com: <b>João da Silva</b>, nascimento <b>10/05/1990</b>.</span>'}<a href="${isAdmin ? '../' : 'admin/'}" style="color:#fff">${isAdmin ? 'Ver o site' : 'Ver o painel administrativo'}</a><button type="button" style="background:none;border:1px solid #f1d796;color:#f1d796;border-radius:6px;padding:.15rem .5rem;cursor:pointer">Restaurar dados</button>`;
     bar.querySelector('button').addEventListener('click', () => { if (confirm('Apagar as alterações feitas nesta demonstração?')) window.__demoReset(); });

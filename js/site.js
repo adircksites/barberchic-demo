@@ -48,6 +48,10 @@
     if ($('#services-grid')) $('#services-grid').innerHTML = servicesHtml;
     if ($('#price-list')) $('#price-list').innerHTML = s.servicos.map((v) => `<div class="price-row"><span class="price-name">${esc(v.nome)}<small>${v.duracao} min</small></span><span class="price-dots" aria-hidden="true"></span><span class="price-val">${brl(v.preco)}</span></div>`).join('') || '<p class="muted">Serviços em breve.</p>';
 
+    if ($('#products-grid')) $('#products-grid').innerHTML = (s.produtos || []).map((p) => `<article class="product">
+        <div class="product-photo">${p.foto ? `<img src="${esc(p.foto)}" alt="${esc(p.nome)}" loading="lazy">` : '<svg viewBox="0 0 64 64" aria-hidden="true"><rect x="16" y="22" width="32" height="30" rx="6" fill="none" stroke="currentColor" stroke-width="2"/><rect x="14" y="14" width="36" height="9" rx="3" fill="none" stroke="currentColor" stroke-width="2"/></svg>'}</div>
+        <div class="product-body"><div class="product-name">${esc(p.nome)}</div>${p.descricao ? `<p class="muted small">${esc(p.descricao)}</p>` : ''}<div class="product-price">${brl(p.preco)}</div></div></article>`).join('')
+      || '<p class="muted">Consulte os produtos disponíveis direto na barbearia.</p>';
     if ($('#team-grid')) $('#team-grid').innerHTML = s.barbeiros.map((m) => `<div class="member">${m.foto ? `<img class="member-photo" src="${esc(m.foto)}" alt="${esc(m.nome)}">` : `<div class="member-photo" aria-hidden="true">${esc(m.nome[0] || '?')}</div>`}
       <p class="member-name">${esc(m.nome)}</p>${m.bio ? `<p class="member-bio">${esc(m.bio)}</p>` : ''}</div>`).join('') || '<p class="muted">Equipe em breve.</p>';
 
@@ -395,6 +399,16 @@
   function closeMenu() { $('#nav').classList.remove('open'); menuBtn.setAttribute('aria-expanded', 'false'); }
   menuBtn.addEventListener('click', () => { const o = $('#nav').classList.toggle('open'); menuBtn.setAttribute('aria-expanded', String(o)); });
   $$('#nav a').forEach((a) => a.addEventListener('click', closeMenu));
+
+  // Aba ativa no menu lateral conforme a seção visível
+  const navLinks = $$('#nav a.nav-link[href^="#"]');
+  if (navLinks.length && 'IntersectionObserver' in window) {
+    const byId = new Map(navLinks.map((a) => [a.getAttribute('href').slice(1), a]));
+    const io = new IntersectionObserver((entries) => {
+      for (const e of entries) if (e.isIntersecting && byId.has(e.target.id)) { navLinks.forEach((a) => a.classList.remove('active')); byId.get(e.target.id).classList.add('active'); }
+    }, { rootMargin: '-45% 0px -50% 0px' });
+    byId.forEach((a, id) => { const sec = document.getElementById(id); if (sec) io.observe(sec); });
+  }
 
   (async () => {
     try { state.site = await api('/api/site'); renderSite(state.site); }

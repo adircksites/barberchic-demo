@@ -18,11 +18,14 @@
   <header class="topbar">
     <a href="#inicio" class="brand" aria-label="Início"><img id="brand-logo" src="./img/logo-claro.svg" alt="Barberchic Fonseca"></a>
     <nav class="nav" id="nav">
-      <a href="#sobre">A barbearia</a>
-      <a href="#servicos">Serviços</a>
-      <a href="#equipe">Equipe</a>
-      <a href="#galeria" id="nav-galeria">Fotos</a>
-      <a href="#contato">Contato</a>
+      <a href="#inicio" class="nav-link">Início</a>
+      <a href="#sobre" class="nav-link">A barbearia</a>
+      <a href="#servicos" class="nav-link">Serviços</a>
+      <a href="#produtos" class="nav-link">Produtos</a>
+      <a href="#galeria" class="nav-link" id="nav-galeria">Fotos</a>
+      <a href="#equipe" class="nav-link">Equipe</a>
+      <a href="#contato" class="nav-link">Contato</a>
+      <span class="nav-spacer" aria-hidden="true"></span>
       <button class="btn btn-ghost btn-sm" id="btn-conta" type="button">Entrar</button>
       <a href="agendar.html" class="btn btn-gold btn-sm" data-agendar>Agendar</a>
     </nav>
@@ -70,7 +73,16 @@
       </div>
     </section>
 
-    <section class="section" id="galeria">
+    <section class="section" id="produtos">
+      <div class="container">
+        <p class="eyebrow">Produtos</p>
+        <h2>Para cuidar em casa</h2>
+        <p class="muted">Produtos à venda na barbearia. Pergunte ao seu barbeiro qual combina com você.</p>
+        <div class="products-grid" id="products-grid"></div>
+      </div>
+    </section>
+
+    <section class="section section-dark" id="galeria">
       <div class="container">
         <p class="eyebrow">Fotos</p>
         <h2>Nosso trabalho</h2>
@@ -79,7 +91,7 @@
       </div>
     </section>
 
-    <section class="section section-dark" id="equipe">
+    <section class="section" id="equipe">
       <div class="container">
         <p class="eyebrow">Equipe</p>
         <h2>Quem vai te atender</h2>

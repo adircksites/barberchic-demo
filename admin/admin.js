@@ -440,6 +440,35 @@
     $$('[data-del]').forEach((b) => b.addEventListener('click', () => { if (confirm('Apagar este serviço? Se já tiver sido usado, ele só será desativado.')) run(b, async () => { await api(A(`/servicos/${b.dataset.del}`), { method: 'DELETE' }); go(); }); }));
   };
 
+  // ================= Produtos =================
+  sections.produtos = async () => {
+    const r = await api(A('/produtos'));
+    $('#main').innerHTML = `<div class="head"><div><h1>Produtos</h1><p class="muted">Aparecem na aba <b>Produtos</b> da página inicial. Desative para esconder sem apagar.</p></div><button class="btn primary" id="pd-new">+ Novo produto</button></div>
+      <div class="card">${r.produtos.length ? `<table><tr><th></th><th>Produto</th><th>Preço</th><th>Situação</th><th></th></tr>${r.produtos.map((p) => `<tr>
+        <td style="width:64px">${p.photo ? `<img src="${esc(p.photo)}" alt="" style="width:52px;height:52px;object-fit:cover;border-radius:8px">` : ''}</td>
+        <td><b>${esc(p.name)}</b><br><span class="small muted">${esc(p.description)}</span></td><td>${brl(p.price_cents)}</td><td>${p.active ? tag('ok', 'No site') : tag('err', 'Oculto')}</td>
+        <td class="actions"><button class="btn sm" data-edit="${p.id}">Editar</button> <button class="btn sm danger" data-del="${p.id}">Apagar</button></td></tr>`).join('')}</table>` : '<p class="empty">Nenhum produto cadastrado.</p>'}</div>`;
+    const open = (p = {}) => {
+      const box = modal(`<h2>${p.id ? 'Editar produto' : 'Novo produto'}</h2><form class="form" id="f-pd">
+        <label class="full">Nome<input name="nome" value="${esc(p.name || '')}" placeholder="Ex.: Pomada modeladora efeito matte"></label>
+        <label>Preço (R$)<input name="preco" inputmode="decimal" value="${p.price_cents != null ? (p.price_cents / 100).toFixed(2).replace('.', ',') : ''}"></label>
+        <label>Ordem na vitrine<input name="ordem" type="number" value="${p.sort || 0}"></label>
+        <label class="full">Descrição<input name="descricao" maxlength="400" value="${esc(p.description || '')}"></label>
+        <label class="full">Foto<input type="file" id="pd-photo" accept="image/*"></label>
+        ${p.photo ? `<div class="full"><img src="${esc(p.photo)}" alt="" style="width:90px;height:90px;object-fit:cover;border-radius:8px"> <label style="display:inline-flex;gap:.4rem;align-items:center;font-weight:500"><input type="checkbox" name="remover_foto"> Remover foto</label></div>` : ''}
+        <label class="full" style="display:flex;gap:.5rem;align-items:center"><input type="checkbox" name="ativo" ${p.id ? (p.active ? 'checked' : '') : 'checked'}> Mostrar no site</label></form>
+        <div class="modal-foot"><span></span><div><button class="btn" data-x>Cancelar</button> <button class="btn primary" id="pd-save">Salvar</button></div></div>`);
+      $('#pd-save', box).addEventListener('click', (e) => run(e.target, async () => {
+        const d = formData($('#f-pd', box)); if (p.id) d.id = p.id;
+        const file = $('#pd-photo', box).files[0]; if (file) d.foto = await uploadImage(file);
+        await api(A('/produtos'), { body: d }); toast('Produto salvo.'); closeModal(); go();
+      }));
+    };
+    $('#pd-new').addEventListener('click', () => open());
+    $$('[data-edit]').forEach((b) => b.addEventListener('click', () => open(r.produtos.find((p) => p.id === Number(b.dataset.edit)))));
+    $$('[data-del]').forEach((b) => b.addEventListener('click', () => { if (confirm('Apagar este produto?')) run(b, async () => { await api(A(`/produtos/${b.dataset.del}`), { method: 'DELETE' }); go(); }); }));
+  };
+
   // ================= Agenda =================
   let agendaDate = null;
   sections.agenda = async () => {
